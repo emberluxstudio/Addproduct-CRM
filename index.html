@@ -328,7 +328,7 @@ async function fetchAndRenderProducts() {
     const loadingDiv = document.getElementById('recent-products');
     loadingDiv.innerHTML = '<p style="text-align:center; opacity:0.7;">Loading products...</p>';
     try {
-        const res = await fetch("https://api.emberluxstudio.com/api/products/all-product");
+        const res = await fetch("https://api.emberluxstudio.com/api/v1/products/all-product");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const encrypted = await res.text();
         allProducts = await decryptData(encrypted);
@@ -477,7 +477,7 @@ async function fetchProductDetail() {
     }
     content.innerHTML = '<p style="text-align:center; opacity:0.7;">Loading...</p>';
     try {
-        const res = await fetch(`https://api.emberluxstudio.com/api/products/${id}`);
+        const res = await fetch(`https://api.emberluxstudio.com/api/v1/products/${id}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const encrypted = await res.text();
         const p = await decryptData(encrypted);
@@ -534,7 +534,7 @@ document.getElementById('editForm').addEventListener('submit', async function(e)
     }
 
     try {
-        const res = await fetch(`https://api.emberluxstudio.com/api/products/update/${id}`, {
+        const res = await fetch(`https://api.emberluxstudio.com/api/v1/products/update/${id}`, {
             method: 'PUT',
             body: formData
         });
@@ -566,7 +566,7 @@ async function deleteProduct(id) {
     if (!confirm("Are you sure you want to delete this product?")) return;
 
     try {
-        const res = await fetch(`https://api.emberluxstudio.com/api/products/delete/${id}`, { method: "DELETE" });
+        const res = await fetch(`https://api.emberluxstudio.com/api/v1/products/delete/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Delete failed");
         allProducts = [];
         fetchAndRenderProducts();
@@ -584,7 +584,7 @@ document.getElementById('add-product-form').addEventListener('submit', async e =
     btn.textContent = 'Creating...';
     try {
         const formData = new FormData(e.target);
-        const res = await fetch("https://api.emberluxstudio.com/api/products/add", {
+        const res = await fetch("https://api.emberluxstudio.com/api/v1/products/add", {
             method: "POST",
             body: formData
         });
