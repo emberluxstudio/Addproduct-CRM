@@ -17,6 +17,7 @@
             --accent-dark: #b5895b;
             --border: rgba(212,163,115,0.15);
             --glow: rgba(212,163,115,0.08);
+            --danger: #e07a5f;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
@@ -32,11 +33,7 @@
             text-align: center;
             border-bottom: 1px solid var(--border);
         }
-        header h1 {
-            font-size: 2.5rem;
-            color: var(--accent);
-            margin-bottom: 0.5rem;
-        }
+        header h1 { font-size: 2.5rem; color: var(--accent); margin-bottom: 0.5rem; }
         .tabs {
             display: flex;
             justify-content: center;
@@ -51,12 +48,10 @@
             border-radius: 50px;
             color: var(--text-muted);
             font-weight: 500;
-            letter-spacing: 0.5px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        .tab.active,
-        .tab:hover {
+        .tab.active, .tab:hover {
             background: var(--accent);
             color: #0d0b08;
             box-shadow: 0 0 25px var(--glow);
@@ -77,42 +72,26 @@
             gap: 1.5rem;
             margin-bottom: 2.5rem;
         }
-        .stat-card {
-            text-align: center;
-            padding: 1.5rem;
-        }
-        .stat-number {
-            font-size: 2.4rem;
-            font-weight: 700;
-            color: var(--accent);
-            margin: 0.5rem 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 1.1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
+        .stat-card { text-align: center; padding: 1.5rem; }
+        .stat-number { font-size: 2.4rem; font-weight: 700; color: var(--accent); margin: 0.5rem 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1.1rem; text-align: left; border-bottom: 1px solid var(--border); }
         th { color: var(--accent); font-weight: 600; }
         .btn {
             background: var(--accent);
             color: #0d0b08;
             border: none;
-            padding: 0.8rem 1.6rem;
+            padding: 0.6rem 1.2rem;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.25s;
+            margin-right: 8px;
         }
         .btn:hover { background: var(--accent-dark); transform: translateY(-2px); }
-        .btn.clear-btn {
-            background: #444;
-            color: white;
-        }
-        .form-input, textarea {
+        .btn.danger { background: var(--danger); color: white; }
+        .btn.danger:hover { background: #c2410c; }
+        .form-input, textarea, input[type="file"] {
             background: rgba(255,255,255,0.04);
             border: 1px solid var(--border);
             color: var(--text);
@@ -120,12 +99,37 @@
             border-radius: 8px;
             width: 100%;
             margin-bottom: 1.3rem;
-            font-size: 1rem;
         }
         .form-input:focus, textarea:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--glow);
             outline: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .close-btn {
+            float: right;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            line-height: 1;
         }
         .images-gallery img {
             max-width: 140px;
@@ -151,10 +155,7 @@
             flex-wrap: wrap;
             margin: 1.5rem 0;
         }
-        .catalog-search-row input {
-            flex: 1;
-            min-width: 220px;
-        }
+        .catalog-search-row input { flex: 1; min-width: 220px; }
         @media (max-width: 768px) {
             .tabs { gap: 1rem; }
             .tab { padding: 0.7rem 1.4rem; font-size: 0.95rem; }
@@ -244,18 +245,37 @@
             <div class="card">
                 <h2>Product Detail</h2>
                 <div style="margin:1.8rem 0; max-width:500px;">
-                    <input type="text" id="product-id-input" class="form-input" placeholder="Enter Product ID to view">
-                    <button class="btn" onclick="fetchProductDetail()" style="margin-top:1rem; width:100%;">Load Details</button>
+                    <input type="text" id="product-id-input" class="form-input" placeholder="Enter Product ID">
+                    <button class="btn" id="load-detail-btn" style="margin-top:1rem; width:100%;">Load Details</button>
                 </div>
-                <div id="product-detail-content"></div>
+                <div id="product-detail-content" style="margin-top:2rem;"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('editModal').style.display='none'">×</span>
+            <h2>Edit Product</h2>
+            <form id="editForm" style="margin-top:1.5rem;">
+                <input type="hidden" id="edit-id">
+                <input type="text" id="edit-name" class="form-input" placeholder="Product Name *" required>
+                <input type="text" id="edit-color" class="form-input" placeholder="Color / Theme">
+                <input type="text" id="edit-currency" value="INR" readonly class="form-input">
+                <input type="number" id="edit-price" class="form-input" placeholder="Price (INR) *" required>
+                <textarea id="edit-description" class="form-input" placeholder="Description..." rows="5" required></textarea>
+                <input type="file" id="edit-images" name="images" multiple class="form-input">
+                <small style="color:var(--text-muted); display:block; margin-bottom:1rem;">New images (optional)</small>
+                <button type="submit" class="btn" style="width:100%; margin-top:1rem;">Update Product</button>
+            </form>
+            <div id="edit-msg" style="margin-top:1rem; text-align:center; font-weight:600;"></div>
         </div>
     </div>
 
     <div id="total-products"></div>
 
 <script>
-// ──────────────────────────────────────────────
 const SECRET_KEY = "w4Z7t+X1xk6uG4q8HVJFcE3XxXH8mH7AwVSTKX2QZog=";
 const IV = "bWlndHR5aXYxMjM=";
 
@@ -292,30 +312,23 @@ tabs.forEach(tab => {
         tabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         sections.forEach(s => s.classList.remove('active'));
-        let sectionId;
-        if (tab.id === 'tab-home') sectionId = 'home-section';
-        else if (tab.id === 'tab-catalog') sectionId = 'catalog-section';
-        else if (tab.id === 'tab-add') sectionId = 'add-section';
+        let sectionId = tab.id.replace('tab-', '') + '-section';
         document.getElementById(sectionId).classList.add('active');
-        if (tab.id === 'tab-home' || tab.id === 'tab-catalog') {
-            fetchAndRenderProducts();
-        }
+        if (tab.id === 'tab-home' || tab.id === 'tab-catalog') fetchAndRenderProducts();
     });
 });
 
-// ─── Fetch & Render Products ───
+// Fetch products
 async function fetchAndRenderProducts() {
     if (allProducts.length > 0) {
         renderOverview();
         renderCatalog();
         return;
     }
-
     const loadingDiv = document.getElementById('recent-products');
     loadingDiv.innerHTML = '<p style="text-align:center; opacity:0.7;">Loading products...</p>';
-
     try {
-        const res = await fetch("https://emberlux-backend.onrender.com/api/v1/products/all-product");
+        const res = await fetch("https://api.emberluxstudio.com/api/products/all-product");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const encrypted = await res.text();
         allProducts = await decryptData(encrypted);
@@ -324,39 +337,35 @@ async function fetchAndRenderProducts() {
         renderCatalog();
     } catch (e) {
         console.error(e);
-        loadingDiv.innerHTML = `<p style="color:#e07a5f; text-align:center; padding:2rem;">Failed to load: ${e.message}</p>`;
+        loadingDiv.innerHTML = `<p style="color:#e07a5f; text-align:center; padding:2rem;">Failed: ${e.message}</p>`;
     }
 }
 
 function renderOverview() {
     document.getElementById('total-count').textContent = allProducts.length;
     document.getElementById('recent-count').textContent = Math.min(6, allProducts.length);
-
-    const totalPrice = allProducts.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
-    const avg = allProducts.length ? '₹' + (totalPrice / allProducts.length).toFixed(0) : '—';
+    const avg = allProducts.length ? '₹' + (allProducts.reduce((s, p) => s + Number(p.price || 0), 0) / allProducts.length).toFixed(0) : '—';
     document.getElementById('avg-price').textContent = avg;
 
     const container = document.getElementById('recent-products');
-    container.innerHTML = allProducts.length === 0 
-        ? '<p style="text-align:center; opacity:0.7;">No products available</p>'
-        : '';
+    container.innerHTML = allProducts.length ? '' : '<p style="text-align:center; opacity:0.7;">No products</p>';
 
     allProducts.slice(0, 6).forEach(p => {
-        const card = document.createElement('div');
-        card.style.cssText = 'display:flex; align-items:center; gap:1.2rem; margin-bottom:1.2rem; padding:1rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px;';
-        card.innerHTML = `
-            <img src="${p.images?.[0] || 'https://via.placeholder.com/90?text=Emberlux'}" alt="" style="width:90px; height:90px; object-fit:cover; border-radius:8px; background:#111;">
-            <div style="flex:1;">
-                <div style="font-weight:600; font-size:1.1rem;">${p.name || 'Unnamed'}</div>
-                <div style="color:var(--accent); margin:0.3rem 0;">${p.currency || 'INR'} ${p.price || '—'}</div>
-                <div style="color:#c9a67c; font-size:0.9rem; cursor:pointer;" onclick="viewProduct('${p.id}')">View Detail →</div>
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex; align-items:center; gap:1.2rem; margin-bottom:1.2rem; padding:1rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px;';
+        div.innerHTML = `
+            <img src="${p.images?.[0] || 'https://via.placeholder.com/90'}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;">
+            <div>
+                <div style="font-weight:600;font-size:1.1rem;">${p.name || '—'}</div>
+                <div style="color:var(--accent);margin:0.3rem 0;">${p.currency || 'INR'} ${p.price || '—'}</div>
+                <div style="color:#c9a67c;cursor:pointer;font-size:0.9rem;" onclick="viewProduct('${p.id}')">View →</div>
             </div>
         `;
-        container.appendChild(card);
+        container.appendChild(div);
     });
 }
 
-// ─── Catalog Render + Search Filter ───
+// Catalog with View → Edit → Delete
 function renderCatalog(filteredProducts = allProducts) {
     const container = document.getElementById('product-list');
     container.innerHTML = '';
@@ -380,7 +389,7 @@ function renderCatalog(filteredProducts = allProducts) {
                 <th>Name</th>
                 <th>Price</th>
                 <th>Image</th>
-                <th>Action</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -394,7 +403,11 @@ function renderCatalog(filteredProducts = allProducts) {
             <td>${p.name || '—'}</td>
             <td style="color:var(--accent);">₹${p.price || '—'}</td>
             <td><img src="${p.images?.[0] || 'https://via.placeholder.com/60'}" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:6px;"></td>
-            <td><button class="btn" style="padding:0.6rem 1rem;font-size:0.9rem;" onclick="viewProduct('${p.id}')">View</button></td>
+            <td>
+                <button class="btn" onclick="viewProduct('${p.id}')">View</button>
+                <button class="btn" onclick="openEditModal('${p.id}','${escapeHtml(p.name || '')}','${escapeHtml(p.color || '')}','${p.price || ''}','${escapeHtml(p.description || '')}')">Edit</button>
+                <button class="btn danger" onclick="deleteProduct('${p.id}')">Delete</button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -406,55 +419,47 @@ function renderCatalog(filteredProducts = allProducts) {
     document.getElementById('next-page').disabled = currentPage * pageSize >= filteredProducts.length;
 }
 
-// Pagination buttons
+// Safe HTML escape for special characters in onclick
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Pagination
 document.getElementById('prev-page').addEventListener('click', () => {
-    if (currentPage > 1) {
-        currentPage--;
-        renderCatalog();
-    }
+    if (currentPage > 1) { currentPage--; renderCatalog(); }
 });
-
 document.getElementById('next-page').addEventListener('click', () => {
-    if (currentPage * pageSize < allProducts.length) {
-        currentPage++;
-        renderCatalog();
-    }
+    if (currentPage * pageSize < allProducts.length) { currentPage++; renderCatalog(); }
 });
 
-// ─── Catalog Search Logic ───
+// Search
 function performCatalogSearch() {
     const term = document.getElementById('catalog-search-input').value.trim().toLowerCase();
-
     if (!term) {
         currentPage = 1;
         renderCatalog(allProducts);
         return;
     }
-
     const filtered = allProducts.filter(p => 
         (p.id + '').toLowerCase().includes(term) || 
         (p.name || '').toLowerCase().includes(term)
     );
-
     currentPage = 1;
     renderCatalog(filtered);
 }
 
-document.getElementById('catalog-search-btn')?.addEventListener('click', performCatalogSearch);
-
-document.getElementById('catalog-search-input')?.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        performCatalogSearch();
-    }
+document.getElementById('catalog-search-btn').addEventListener('click', performCatalogSearch);
+document.getElementById('catalog-search-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') performCatalogSearch();
 });
-
-document.getElementById('catalog-clear-btn')?.addEventListener('click', () => {
+document.getElementById('catalog-clear-btn').addEventListener('click', () => {
     document.getElementById('catalog-search-input').value = '';
     performCatalogSearch();
 });
 
-// ─── Other functions remain unchanged ───
+// View Product Detail
 async function viewProduct(id) {
     document.getElementById('product-id-input').value = id;
     tabs.forEach(t => t.classList.remove('active'));
@@ -465,17 +470,19 @@ async function viewProduct(id) {
 
 async function fetchProductDetail() {
     const id = document.getElementById('product-id-input').value.trim();
+    const content = document.getElementById('product-detail-content');
     if (!id) {
-        document.getElementById('product-detail-content').innerHTML = '<p style="text-align:center; opacity:0.7;">Enter Product ID</p>';
+        content.innerHTML = '<p style="text-align:center; opacity:0.7;">Enter Product ID</p>';
         return;
     }
+    content.innerHTML = '<p style="text-align:center; opacity:0.7;">Loading...</p>';
     try {
-        const res = await fetch(`https://emberlux-backend.onrender.com/api/v1/products/${id}`);
-        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const res = await fetch(`https://api.emberluxstudio.com/api/products/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const encrypted = await res.text();
         const p = await decryptData(encrypted);
-        const imagesHtml = (p.images || []).map(img => `<img src="${img}" alt="${p.name || 'Product image'}">`).join('');
-        document.getElementById('product-detail-content').innerHTML = `
+        const imagesHtml = (p.images || []).map(img => `<img src="${img}" alt="">`).join('');
+        content.innerHTML = `
             <table style="margin-top:1.5rem;">
                 <tr><th>ID</th><td>${p.id}</td></tr>
                 <tr><th>Name</th><td>${p.name}</td></tr>
@@ -486,34 +493,110 @@ async function fetchProductDetail() {
             </table>
         `;
     } catch (e) {
-        console.error(e);
-        document.getElementById('product-detail-content').innerHTML = 
-            `<p style="color:#e07a5f; text-align:center; margin-top:2rem;">Failed: ${e.message}</p>`;
+        content.innerHTML = `<p style="color:#e07a5f; text-align:center;">Failed: ${e.message}</p>`;
     }
 }
 
-document.getElementById('add-product-form').addEventListener('submit', async function(e) {
+// Edit Modal Open
+function openEditModal(id, name, color, price, description) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-color').value = color;
+    document.getElementById('edit-price').value = price;
+    document.getElementById('edit-description').value = description;
+    document.getElementById('editModal').style.display = 'flex';
+    document.getElementById('edit-msg').innerHTML = '';
+}
+
+// Edit Form Submit - Final Fixed (Postman jaisa)
+document.getElementById('editForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    const msg = document.getElementById('edit-msg');
+    msg.innerHTML = '';
+
+    const id = document.getElementById('edit-id').value;
+    const formData = new FormData();
+
+    formData.append('name', document.getElementById('edit-name').value.trim());
+    formData.append('color', document.getElementById('edit-color').value.trim());
+    formData.append('price', document.getElementById('edit-price').value.trim());
+    formData.append('description', document.getElementById('edit-description').value.trim());
+    formData.append('currency', 'INR');
+
+    const imageInput = document.getElementById('edit-images');
+    if (imageInput.files.length > 0) {
+        for (let file of imageInput.files) {
+            formData.append('images', file);
+        }
+    }
+
+    try {
+        const res = await fetch(`https://api.emberluxstudio.com/api/products/update/${id}`, {
+            method: 'PUT',
+            body: formData
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(err || 'Update failed');
+        }
+
+        msg.innerHTML = 'Product updated successfully!';
+        msg.style.color = 'var(--accent)';
+
+        setTimeout(() => {
+            document.getElementById('editModal').style.display = 'none';
+            allProducts = [];
+            fetchAndRenderProducts();
+        }, 1500);
+    } catch (err) {
+        msg.innerHTML = 'Failed: ' + err.message;
+        msg.style.color = '#e07a5f';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Update Product';
+    }
+});
+
+// Delete with Confirm
+async function deleteProduct(id) {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+        const res = await fetch(`https://api.emberluxstudio.com/api/products/delete/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Delete failed");
+        allProducts = [];
+        fetchAndRenderProducts();
+        alert('Product deleted successfully!');
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+// Add Product
+document.getElementById('add-product-form').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
     btn.disabled = true;
     btn.textContent = 'Creating...';
     try {
         const formData = new FormData(e.target);
-        const res = await fetch("https://emberlux-backend.onrender.com/api/v1/products/add", {
+        const res = await fetch("https://api.emberluxstudio.com/api/products/add", {
             method: "POST",
             body: formData
         });
         if (!res.ok) throw new Error("Add failed");
         const data = await res.json();
-        document.getElementById('add-result').innerHTML = 
-            `✅ Product <strong>${data.name || 'New'}</strong> created!`;
+        document.getElementById('add-result').innerHTML = `Product ${data.name || ''} created!`;
         document.getElementById('add-result').style.color = 'var(--accent)';
         e.target.reset();
         allProducts = [];
         fetchAndRenderProducts();
     } catch (err) {
-        console.error(err);
-        document.getElementById('add-result').innerHTML = '❌ Failed to add product';
+        document.getElementById('add-result').innerHTML = 'Failed to add';
         document.getElementById('add-result').style.color = '#e07a5f';
     } finally {
         btn.disabled = false;
