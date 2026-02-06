@@ -131,11 +131,21 @@
             color: var(--text-muted);
             line-height: 1;
         }
+        .images-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
         .images-gallery img {
             max-width: 140px;
             border-radius: 8px;
             margin: 0.5rem;
             border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.25s ease;
+        }
+        .images-gallery img:hover {
+            transform: scale(1.08);
         }
         #total-products {
             position: fixed;
@@ -150,7 +160,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         .catalog-search-row {
-            display: fix;
+            display: flex;
             gap: 10px;
             flex-wrap: wrap;
             margin: 1.5rem 0;
@@ -161,22 +171,63 @@
             .tab { padding: 0.7rem 1.4rem; font-size: 0.95rem; }
             .catalog-search-row { flex-direction: column; }
         }
+
+        /* Full-screen image viewer */
+        #fullImageViewer {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 5000;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            cursor: zoom-out;
+        }
+        #fullImage {
+            max-width: 95vw;
+            max-height: 95vh;
+            object-fit: contain;
+            transform: scale(1);
+            transition: transform 0.25s ease;
+            box-shadow: 0 0 60px rgba(212,163,115,0.4);
+        }
+        #fullImage.zoomed {
+            transform: scale(2.5);
+        }
+        #closeFullImage {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            font-size: 3.5rem;
+            color: white;
+            cursor: pointer;
+            background: rgba(0,0,0,0.6);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5100;
+            transition: all 0.2s;
+        }
+        #closeFullImage:hover {
+            background: rgba(212,163,115,0.3);
+        }
     </style>
 </head>
 <body>
-
     <div class="container">
         <header>
             <h1>Emberlux CRM</h1>
             <p style="opacity:0.7; font-size:1.1rem;">Admin Panel • Product Management</p>
         </header>
-
         <div class="tabs">
             <div class="tab active" id="tab-home">Home / Overview</div>
             <div class="tab" id="tab-catalog">Product Catalog</div>
             <div class="tab" id="tab-add">Add Product</div>
         </div>
-
         <!-- Home / Overview -->
         <div id="home-section" class="section active">
             <div class="stats-grid">
@@ -193,7 +244,6 @@
                     <div class="stat-number" id="avg-price">—</div>
                 </div>
             </div>
-
             <div class="card">
                 <h2>Recent Products</h2>
                 <div id="recent-products" style="margin-top:1.5rem;">
@@ -201,20 +251,16 @@
                 </div>
             </div>
         </div>
-
         <!-- Product Catalog -->
         <div id="catalog-section" class="section">
             <div class="card">
                 <h2>Product Catalog</h2>
-
                 <div class="catalog-search-row">
                     <input type="text" id="catalog-search-input" class="form-input" placeholder="Search by name or ID...">
                     <button class="btn" id="catalog-search-btn">Search</button>
                     <button class="btn clear-btn" id="catalog-clear-btn">Clear</button>
                 </div>
-
                 <div id="product-list"></div>
-
                 <div style="text-align:center; margin-top:2rem;">
                     <button class="btn" id="prev-page">Prev</button>
                     <span id="page-info" style="margin:0 1.5rem; color:var(--text-muted);"></span>
@@ -222,7 +268,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Add Product -->
         <div id="add-section" class="section">
             <div class="card" style="max-width:760px; margin:0 auto;">
@@ -230,6 +275,7 @@
                 <form id="add-product-form" style="margin-top:2rem;">
                     <input type="text" name="name" class="form-input" placeholder="Product Name *" required>
                     <input type="text" name="color" class="form-input" placeholder="Color / Vessel Theme">
+                    <input type="text" name="fragrance" class="form-input" placeholder="Fragrance">
                     <input type="text" name="currency" value="INR" readonly class="form-input">
                     <input type="number" name="price" class="form-input" placeholder="Price (INR) *" required>
                     <textarea name="description" class="form-input" placeholder="Full description, notes, story..." rows="6" required></textarea>
@@ -239,7 +285,6 @@
                 <div id="add-result" style="margin-top:1.8rem; font-weight:600; text-align:center; font-size:1.1rem;"></div>
             </div>
         </div>
-
         <!-- Product Detail -->
         <div id="detail-section" class="section">
             <div class="card">
@@ -252,7 +297,6 @@
             </div>
         </div>
     </div>
-
     <!-- Edit Modal -->
     <div id="editModal" class="modal">
         <div class="modal-content">
@@ -262,6 +306,7 @@
                 <input type="hidden" id="edit-id">
                 <input type="text" id="edit-name" class="form-input" placeholder="Product Name *" required>
                 <input type="text" id="edit-color" class="form-input" placeholder="Color / Theme">
+                <input type="text" id="edit-fragrance" class="form-input" placeholder="Fragrance">
                 <input type="text" id="edit-currency" value="INR" readonly class="form-input">
                 <input type="number" id="edit-price" class="form-input" placeholder="Price (INR) *" required>
                 <textarea id="edit-description" class="form-input" placeholder="Description..." rows="5" required></textarea>
@@ -273,24 +318,27 @@
         </div>
     </div>
 
+    <!-- Full-screen image viewer -->
+    <div id="fullImageViewer">
+        <span id="closeFullImage">×</span>
+        <img id="fullImage" src="" alt="Product Image">
+    </div>
+
     <div id="total-products"></div>
 
 <script>
 const SECRET_KEY = "w4Z7t+X1xk6uG4q8HVJFcE3XxXH8mH7AwVSTKX2QZog=";
 const IV = "bWlndHR5aXYxMjM=";
-
 async function importKey() {
     const keyBytes = base64ToArrayBuffer(SECRET_KEY);
     return crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["decrypt"]);
 }
-
 function base64ToArrayBuffer(base64) {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     return bytes.buffer;
 }
-
 async function decryptData(encryptedBase64) {
     const key = await importKey();
     const iv = base64ToArrayBuffer(IV);
@@ -298,15 +346,12 @@ async function decryptData(encryptedBase64) {
     const decryptedBuffer = await crypto.subtle.decrypt({name:"AES-GCM",iv}, key, encryptedArrayBuffer);
     return JSON.parse(new TextDecoder().decode(decryptedBuffer));
 }
-
 let allProducts = [];
 let currentPage = 1;
 const pageSize = 10;
-
 // Tab switching
 const tabs = document.querySelectorAll('.tab');
 const sections = document.querySelectorAll('.section');
-
 tabs.forEach(tab => {
     tab.addEventListener('click', () => {
         tabs.forEach(t => t.classList.remove('active'));
@@ -317,7 +362,6 @@ tabs.forEach(tab => {
         if (tab.id === 'tab-home' || tab.id === 'tab-catalog') fetchAndRenderProducts();
     });
 });
-
 // Fetch products
 async function fetchAndRenderProducts() {
     if (allProducts.length > 0) {
@@ -340,21 +384,18 @@ async function fetchAndRenderProducts() {
         loadingDiv.innerHTML = `<p style="color:#e07a5f; text-align:center; padding:2rem;">Failed: ${e.message}</p>`;
     }
 }
-
 function renderOverview() {
     document.getElementById('total-count').textContent = allProducts.length;
     document.getElementById('recent-count').textContent = Math.min(6, allProducts.length);
     const avg = allProducts.length ? '₹' + (allProducts.reduce((s, p) => s + Number(p.price || 0), 0) / allProducts.length).toFixed(0) : '—';
     document.getElementById('avg-price').textContent = avg;
-
     const container = document.getElementById('recent-products');
     container.innerHTML = allProducts.length ? '' : '<p style="text-align:center; opacity:0.7;">No products</p>';
-
     allProducts.slice(0, 6).forEach(p => {
         const div = document.createElement('div');
         div.style.cssText = 'display:flex; align-items:center; gap:1.2rem; margin-bottom:1.2rem; padding:1rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px;';
         div.innerHTML = `
-            <img src="${p.images?.[0] || 'https://via.placeholder.com/90'}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;">
+            <img src="${p.images?.[0] || 'https://via.placeholder.com/90'}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;" class="zoomable" onclick="openFullImage(this.src)">
             <div>
                 <div style="font-weight:600;font-size:1.1rem;">${p.name || '—'}</div>
                 <div style="color:var(--accent);margin:0.3rem 0;">${p.currency || 'INR'} ${p.price || '—'}</div>
@@ -364,23 +405,18 @@ function renderOverview() {
         container.appendChild(div);
     });
 }
-
 // Catalog with View → Edit → Delete
 function renderCatalog(filteredProducts = allProducts) {
     const container = document.getElementById('product-list');
     container.innerHTML = '';
-
     if (filteredProducts.length === 0) {
         container.innerHTML = '<p style="text-align:center; padding:3rem 1rem; color:#e07a5f;">No matching products found</p>';
         return;
     }
-
     const start = (currentPage - 1) * pageSize;
     const end = Math.min(start + pageSize, filteredProducts.length);
     const pageData = filteredProducts.slice(start, end);
-
     document.getElementById('total-products').innerText = `Showing ${start+1}–${end} of ${filteredProducts.length}`;
-
     const table = document.createElement('table');
     table.innerHTML = `
         <thead>
@@ -395,37 +431,32 @@ function renderCatalog(filteredProducts = allProducts) {
         <tbody></tbody>
     `;
     const tbody = table.querySelector('tbody');
-
     pageData.forEach(p => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${p.id}</td>
             <td>${p.name || '—'}</td>
             <td style="color:var(--accent);">₹${p.price || '—'}</td>
-            <td><img src="${p.images?.[0] || 'https://via.placeholder.com/60'}" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:6px;"></td>
+            <td><img src="${p.images?.[0] || 'https://via.placeholder.com/60'}" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:6px;" class="zoomable" onclick="openFullImage(this.src)"></td>
             <td>
                 <button class="btn" onclick="viewProduct('${p.id}')">View</button>
-                <button class="btn" onclick="openEditModal('${p.id}','${escapeHtml(p.name || '')}','${escapeHtml(p.color || '')}','${p.price || ''}','${escapeHtml(p.description || '')}')">Edit</button>
+                <button class="btn" onclick="openEditModal('${p.id}','${escapeHtml(p.name || '')}','${escapeHtml(p.color || '')}','${p.fragrance || ''}','${p.price || ''}','${escapeHtml(p.description || '')}')">Edit</button>
                 <button class="btn danger" onclick="deleteProduct('${p.id}')">Delete</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
-
     container.appendChild(table);
-
     document.getElementById('page-info').innerText = `Page ${currentPage} of ${Math.ceil(filteredProducts.length / pageSize)}`;
     document.getElementById('prev-page').disabled = currentPage === 1;
     document.getElementById('next-page').disabled = currentPage * pageSize >= filteredProducts.length;
 }
-
 // Safe HTML escape for special characters in onclick
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
-
 // Pagination
 document.getElementById('prev-page').addEventListener('click', () => {
     if (currentPage > 1) { currentPage--; renderCatalog(); }
@@ -433,7 +464,6 @@ document.getElementById('prev-page').addEventListener('click', () => {
 document.getElementById('next-page').addEventListener('click', () => {
     if (currentPage * pageSize < allProducts.length) { currentPage++; renderCatalog(); }
 });
-
 // Search
 function performCatalogSearch() {
     const term = document.getElementById('catalog-search-input').value.trim().toLowerCase();
@@ -442,14 +472,13 @@ function performCatalogSearch() {
         renderCatalog(allProducts);
         return;
     }
-    const filtered = allProducts.filter(p => 
-        (p.id + '').toLowerCase().includes(term) || 
+    const filtered = allProducts.filter(p =>
+        (p.id + '').toLowerCase().includes(term) ||
         (p.name || '').toLowerCase().includes(term)
     );
     currentPage = 1;
     renderCatalog(filtered);
 }
-
 document.getElementById('catalog-search-btn').addEventListener('click', performCatalogSearch);
 document.getElementById('catalog-search-input').addEventListener('keypress', e => {
     if (e.key === 'Enter') performCatalogSearch();
@@ -458,7 +487,6 @@ document.getElementById('catalog-clear-btn').addEventListener('click', () => {
     document.getElementById('catalog-search-input').value = '';
     performCatalogSearch();
 });
-
 // View Product Detail
 async function viewProduct(id) {
     document.getElementById('product-id-input').value = id;
@@ -467,7 +495,6 @@ async function viewProduct(id) {
     document.getElementById('detail-section').classList.add('active');
     await fetchProductDetail();
 }
-
 async function fetchProductDetail() {
     const id = document.getElementById('product-id-input').value.trim();
     const content = document.getElementById('product-detail-content');
@@ -481,12 +508,15 @@ async function fetchProductDetail() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const encrypted = await res.text();
         const p = await decryptData(encrypted);
-        const imagesHtml = (p.images || []).map(img => `<img src="${img}" alt="">`).join('');
+        const imagesHtml = (p.images || []).map(img => 
+            `<img src="${img}" alt="" class="zoomable" onclick="openFullImage('${img}')">`
+        ).join('');
         content.innerHTML = `
             <table style="margin-top:1.5rem;">
                 <tr><th>ID</th><td>${p.id}</td></tr>
                 <tr><th>Name</th><td>${p.name}</td></tr>
                 <tr><th>Color</th><td>${p.color || '—'}</td></tr>
+                <tr><th>Fragrance</th><td>${p.fragrance || '—'}</td></tr>
                 <tr><th>Price</th><td style="color:var(--accent);">₹${p.price}</td></tr>
                 <tr><th>Description</th><td>${p.description || 'No description'}</td></tr>
                 <tr><th>Images</th><td><div class="images-gallery">${imagesHtml || 'No images'}</div></td></tr>
@@ -496,18 +526,17 @@ async function fetchProductDetail() {
         content.innerHTML = `<p style="color:#e07a5f; text-align:center;">Failed: ${e.message}</p>`;
     }
 }
-
 // Edit Modal Open
-function openEditModal(id, name, color, price, description) {
+function openEditModal(id, name, color, fragrance, price, description) {
     document.getElementById('edit-id').value = id;
     document.getElementById('edit-name').value = name;
     document.getElementById('edit-color').value = color;
+    document.getElementById('edit-fragrance').value = fragrance;
     document.getElementById('edit-price').value = price;
     document.getElementById('edit-description').value = description;
     document.getElementById('editModal').style.display = 'flex';
     document.getElementById('edit-msg').innerHTML = '';
 }
-
 // Edit Form Submit - Final Fixed (Postman jaisa)
 document.getElementById('editForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -516,37 +545,31 @@ document.getElementById('editForm').addEventListener('submit', async function(e)
     btn.textContent = 'Updating...';
     const msg = document.getElementById('edit-msg');
     msg.innerHTML = '';
-
     const id = document.getElementById('edit-id').value;
     const formData = new FormData();
-
     formData.append('name', document.getElementById('edit-name').value.trim());
     formData.append('color', document.getElementById('edit-color').value.trim());
+    formData.append('fragrance', document.getElementById('edit-fragrance').value.trim());
     formData.append('price', document.getElementById('edit-price').value.trim());
     formData.append('description', document.getElementById('edit-description').value.trim());
     formData.append('currency', 'INR');
-
     const imageInput = document.getElementById('edit-images');
     if (imageInput.files.length > 0) {
         for (let file of imageInput.files) {
             formData.append('images', file);
         }
     }
-
     try {
         const res = await fetch(`https://api.emberluxstudio.com/api/v1/products/update/${id}`, {
             method: 'PUT',
             body: formData
         });
-
         if (!res.ok) {
             const err = await res.text();
             throw new Error(err || 'Update failed');
         }
-
         msg.innerHTML = 'Product updated successfully!';
         msg.style.color = 'var(--accent)';
-
         setTimeout(() => {
             document.getElementById('editModal').style.display = 'none';
             allProducts = [];
@@ -560,11 +583,9 @@ document.getElementById('editForm').addEventListener('submit', async function(e)
         btn.textContent = 'Update Product';
     }
 });
-
 // Delete with Confirm
 async function deleteProduct(id) {
     if (!confirm("Are you sure you want to delete this product?")) return;
-
     try {
         const res = await fetch(`https://api.emberluxstudio.com/api/v1/products/delete/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Delete failed");
@@ -575,7 +596,6 @@ async function deleteProduct(id) {
         alert('Error: ' + err.message);
     }
 }
-
 // Add Product
 document.getElementById('add-product-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -602,6 +622,40 @@ document.getElementById('add-product-form').addEventListener('submit', async e =
         btn.disabled = false;
         btn.textContent = 'Create Product';
     }
+});
+
+// Full-screen image viewer logic
+const fullImageViewer = document.getElementById('fullImageViewer');
+const fullImage = document.getElementById('fullImage');
+const closeFullImage = document.getElementById('closeFullImage');
+
+function openFullImage(src) {
+    fullImage.src = src;
+    fullImage.classList.remove('zoomed');
+    fullImageViewer.style.display = 'flex';
+}
+
+function closeFullImageModal() {
+    fullImageViewer.style.display = 'none';
+    fullImage.src = '';
+}
+
+closeFullImage.onclick = closeFullImageModal;
+fullImageViewer.onclick = function(e) {
+    if (e.target === fullImageViewer) closeFullImageModal();
+};
+
+fullImage.onclick = function(e) {
+    e.stopPropagation();
+    this.classList.toggle('zoomed');
+};
+
+fullImage.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    let scale = this.classList.contains('zoomed') ? 2.5 : 1;
+    scale += e.deltaY * -0.001;
+    scale = Math.min(Math.max(0.5, scale), 6);
+    this.style.transform = `scale(${scale})`;
 });
 
 // Initial load
